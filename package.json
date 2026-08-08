@@ -1,0 +1,26 @@
+{
+  "name": "shipthatcode-build-http-server-javascript",
+  "version": "1.0.0",
+  "description": "[![shipthatcode — Build Your Own HTTP Server](https://api.shipthatcode.com/cert/d245f5fb8724a101741bae6c93f51013.svg)](https://shipthatcode.com/courses/build-http-server)",
+  "homepage": "https://github.com/disturbedlord/shipthatcode-build-http-server-javascript#readme",
+  "bugs": {
+    "url": "https://github.com/disturbedlord/shipthatcode-build-http-server-javascript/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/disturbedlord/shipthatcode-build-http-server-javascript.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "main.ts",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    ".": "npx tsc && copy dist\\main.js .\\"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0"
+  }
+}
