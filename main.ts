@@ -9,26 +9,40 @@ const METHODS = new Set([
   "PATCH",
 ]);
 
-function isVersion(s: string) {
-  // TODO: return true only if s matches /^HTTP\/\d+\.\d+$/
-  let httpVersionRegex = new RegExp("HTTP/\\d\\.\\d", "gm");
-  return httpVersionRegex.test(s);
+class Logger {
+  env = 1; // 0 -> Dev , 1 -> Prod
+  log = (s: string | string[]) =>
+    this.env === 0 ? console.log("[LOG] : ", s) : null;
+  prod = (s: string) => console.log(s);
 }
 
+class HttpParser {
+  private logger: Logger = new Logger();
+
+  private isVersion = (s: string) => {
+    let httpVersionRegex = new RegExp("HTTP/\\d\\.\\d", "gm");
+    return httpVersionRegex.test(s);
+  };
+
+  parse = (line: string) => {
+    const parts = line.split(" ");
+    this.logger.log(parts);
+    if (
+      parts.length !== 3 ||
+      !METHODS.has(parts[0]!) ||
+      !parts[1]!.startsWith("/") ||
+      !this.isVersion(parts[2]!)
+    ) {
+      this.logger.prod("INVALID");
+      return;
+    }
+    this.logger.prod(`METHOD=${parts[0]} PATH=${parts[1]} VERSION=${parts[2]}`);
+  };
+}
+
+const parser = new HttpParser();
 for (const raw of lines) {
   const line = raw.replace(/\r$/, "");
   if (!line) continue;
-  const parts = line.split(" ");
-  // TODO: 3 parts, method in METHODS, path starts with "/", version valid
-  // console.log(parts[2], isVersion(parts[2]));
-  if (
-    parts.length !== 3 ||
-    !METHODS.has(parts[0]) ||
-    !parts[1].startsWith("/") ||
-    !isVersion(parts[2])
-  ) {
-    console.log("INVALID");
-    continue;
-  }
-  console.log(`METHOD=${parts[0]} PATH=${parts[1]} VERSION=${parts[2]}`);
+  parser.parse(line);
 }
