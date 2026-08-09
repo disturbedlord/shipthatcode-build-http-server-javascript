@@ -1,44 +1,36 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const lines = require("fs").readFileSync(0, "utf8").split("\n");
-const METHODS = new Set([
-    "GET",
-    "POST",
-    "PUT",
-    "DELETE",
-    "HEAD",
-    "OPTIONS",
-    "PATCH",
-]);
 class Logger {
-    env = 1; // 0 -> Dev , 1 -> Prod
-    log = (s) => this.env === 0 ? console.log("[LOG] : ", s) : null;
-    prod = (s) => console.log(s);
+  env; // 0 -> Dev , 1 -> Prod
+  constructor(env) {
+    this.env = env;
+  }
+  log = (s) => (this.env === 0 ? console.log("[LOG] : ", s) : null);
+  prod = (s) => console.log(s);
 }
-class HttpParser {
-    logger = new Logger();
-    isVersion = (s) => {
-        let httpVersionRegex = new RegExp("HTTP/\\d\\.\\d", "gm");
-        return httpVersionRegex.test(s);
-    };
-    parse = (line) => {
-        const parts = line.split(" ");
-        this.logger.log(parts);
-        if (parts.length !== 3 ||
-            !METHODS.has(parts[0]) ||
-            !parts[1].startsWith("/") ||
-            !this.isVersion(parts[2])) {
-            this.logger.prod("INVALID");
-            return;
-        }
-        this.logger.prod(`METHOD=${parts[0]} PATH=${parts[1]} VERSION=${parts[2]}`);
-    };
-}
-const parser = new HttpParser();
+let headerMap = new Map();
+const NormalizeHeader = (line) => {
+  const ToLowerCase = (inp) => inp.toLowerCase();
+  const TrimSurroundingSpace = (inp) => inp.trim();
+  if (!line.includes(":")) {
+    return `ERR malformed: ${line}`;
+  }
+  const idx = line.indexOf(":");
+  const name = line.slice(0, idx);
+  const value = line.slice(idx + 1);
+  const normalizedName = ToLowerCase(name);
+  const normalizedValue = TrimSurroundingSpace(value);
+  headerMap.set(normalizedName, normalizedValue);
+  return `${normalizedName}: ${normalizedValue}`;
+};
+const logger = new Logger(0);
 for (const raw of lines) {
-    const line = raw.replace(/\r$/, "");
-    if (!line)
-        continue;
-    parser.parse(line);
+  const line = raw.replace(/\r$/, "");
+  if (!line) break;
+  // TODO: if no ':' in line, print `ERR malformed: ${line}` and continue
+  // TODO: lowercase + strip name; strip value
+  logger.prod(NormalizeHeader(line));
 }
+//headerMap.forEach((v, k) => logger.log(`${k} -> ${v}`));
 //# sourceMappingURL=main.js.map

@@ -99,7 +99,7 @@ for dir in tests/${FILTER}*/; do
     else
       fail=$((fail+1)); echo "FAIL  $input"
       echo "  expected: $(head -c 200 "$expected")"
-      echo "  got:      $(printf '%s' "$actual" | head -c 200)"
+      echo "  got: $(printf '%s' "$actual" | head -c 200)"
     fi
   done
 done

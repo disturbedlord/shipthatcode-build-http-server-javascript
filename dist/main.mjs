@@ -1,14 +1,5 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
 const lines = require("fs").readFileSync(0, "utf8").split("\n");
-class Logger {
-    env; // 0 -> Dev , 1 -> Prod
-    constructor(env) {
-        this.env = env;
-    }
-    log = (s) => this.env === 0 ? console.log("[LOG] : ", s) : null;
-    prod = (s) => console.log(s);
-}
+import Logger from "./Logger.mjs";
 let headerMap = new Map();
 const NormalizeHeader = (line) => {
     const ToLowerCase = (inp) => inp.toLowerCase();
@@ -33,5 +24,5 @@ for (const raw of lines) {
     // TODO: lowercase + strip name; strip value
     logger.prod(NormalizeHeader(line));
 }
-//headerMap.forEach((v: string, k: string) => logger.log(`${k} -> ${v}`));
-//# sourceMappingURL=main.js.map
+headerMap.forEach((v, k) => logger.log(`${k} -> ${v}`));
+//# sourceMappingURL=main.mjs.map

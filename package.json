@@ -18,7 +18,8 @@
     "test": "tests"
   },
   "scripts": {
-    ".": "npx tsc && copy dist\\main.js .\\"
+    ".": "npx tsc && copy dist\\main.js .\\",
+    "cpylog": "copy dist\\Logger.js .\\"
   },
   "devDependencies": {
     "@types/node": "^26.2.0"
