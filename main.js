@@ -59,7 +59,9 @@ while (i < data.length) {
     case 2: {
       //console.log(res.headerCount);
       if (res.headerCount > 0) {
-        let [key, value] = data[i]?.split(" ");
+        let header = data[i].split(" ");
+        let key = header[0];
+        let value = header.slice(1).join(" ");
         key = key.trim();
         value = value.trim();
         if (key && value) res.headers.set(key, value);
