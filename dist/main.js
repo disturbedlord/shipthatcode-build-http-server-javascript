@@ -1,37 +1,18 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const lines = require("fs").readFileSync(0, "utf8").split("\n");
-class Logger {
-    env; // 0 -> Dev , 1 -> Prod
-    constructor(env) {
-        this.env = env;
-    }
-    log = (s) => this.env === 0 ? console.log("[LOG] : ", s) : null;
-    prod = (s) => console.log(s);
-}
-let headerMap = new Map();
-const NormalizeHeader = (line) => {
-    const ToLowerCase = (inp) => inp.toLowerCase();
-    const TrimSurroundingSpace = (inp) => inp.trim();
-    if (!line.includes(":")) {
-        return `ERR malformed: ${line}`;
-    }
-    const idx = line.indexOf(":");
-    const name = line.slice(0, idx);
-    const value = line.slice(idx + 1);
-    const normalizedName = ToLowerCase(name);
-    const normalizedValue = TrimSurroundingSpace(value);
-    headerMap.set(normalizedName, normalizedValue);
-    return `${normalizedName}: ${normalizedValue}`;
-};
-const logger = new Logger(0);
-for (const raw of lines) {
-    const line = raw.replace(/\r$/, "");
-    if (!line)
+const data = require("fs").readFileSync(0, "utf8").split("\n");
+let i = 0;
+let content = "";
+while (i < data.length) {
+    let recvContentLength = data[i].trim();
+    let contentLength = parseInt(recvContentLength, 16);
+    if (contentLength === 0)
         break;
-    // TODO: if no ':' in line, print `ERR malformed: ${line}` and continue
-    // TODO: lowercase + strip name; strip value
-    logger.prod(NormalizeHeader(line));
+    if (i + 1 < data.length) {
+        let contentToParse = data[i + 1].substring(0, contentLength);
+        content += contentToParse;
+    }
+    i += 2;
 }
-//headerMap.forEach((v: string, k: string) => logger.log(`${k} -> ${v}`));
+console.log(content);
 //# sourceMappingURL=main.js.map
