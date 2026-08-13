@@ -38,7 +38,39 @@ const getResponse = (path, v) => {
 };
 let i = 0;
 let mode = 0; // 0 : Routing Table , 1 : Request Processing
+let mode = 0; // 0 : Routing Table , 1 : Request Processing
 while (i < data.length) {
+  if (data[i] === "") {
+    mode++; // change to Request processing Mode
+    //console.log(routes);
+  } else {
+    switch (mode) {
+      case 0: {
+        const [verb, path, action] = data[i] ? data[i].split(" ") : [];
+        if (path === undefined || verb === undefined || action === undefined) {
+          break;
+        }
+        //console.log(verb, path, action);
+        let handler = {
+          verb: verb,
+          action: action,
+        };
+        let route;
+        if (routes.has(path)) {
+          route = routes.get(path);
+        } else {
+          route = new Routing(path);
+          routes.set(path, route);
+        }
+        route.setHandler(handler);
+        break;
+      }
+      case 1: {
+        let [verb, path] = data[i] ? data[i].split(" ") : [];
+        if (verb === undefined || path === undefined) continue;
+        console.log(getResponse(path, verb));
+        break;
+      }
   if (data[i] === "") {
     mode++; // change to Request processing Mode
     //console.log(routes);
