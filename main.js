@@ -86,7 +86,8 @@ const HandleRequest = (p, v) => {
       console.log("404");
     } else {
       attr.sort();
-      console.log(`${head.action} ${attr.join(" ")}`);
+      if (attr.length > 0) console.log(`${head.action} ${attr.join(" ")}`);
+      else console.log(head.action);
     }
   } else {
     console.log("404");
