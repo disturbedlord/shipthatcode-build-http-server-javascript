@@ -1,88 +1,143 @@
 const data: string[] = require("fs").readFileSync(0, "utf8").split("\n");
+let i = 0;
 
-interface Handler {
-  verb: string;
-  action: string;
+class Trie {
+  children: Array<Trie> = new Array(128).fill(undefined);
+  isParam: boolean = false;
+  isEnd: boolean = false;
+  path: string = "";
+  param: string = "";
+  verb = "";
+  action = "";
 }
 
-class Routing {
-  private path: string = "";
-  handlers: Handler[] = [];
-  constructor(p: string) {
-    this.path = p;
-  }
-
-  setHandler = (x: Handler) => this.handlers.push(x);
-}
-
-let routes = new Map<string, Routing>();
-
-const getResponse = (path: string, v: string) => {
-  const Ok = (s: string) => `200 ${s}`;
-  const MethodNotAllowed = () => `405`;
-  const NotFound = () => `404`;
-
-  path = path.slice(0, path.includes("?") ? path.indexOf("?") : path.length);
-  //console.log(path);
-  if (!routes.has(path)) return NotFound();
-
-  const route = routes.get(path);
-  if (route !== undefined) {
-    let flag: boolean = false;
-
-    for (let i = 0; i < route.handlers.length; i++) {
-      let handle = route.handlers[i];
-      if (handle?.verb === v) {
-        flag = true;
-        return Ok(handle.action);
-      }
-    }
-
-    if (!flag) return MethodNotAllowed();
-  }
+const isSlash = (x: string) => {
+  if (x === "/") return true;
+  else return false;
 };
 
-let i = 0;
-let mode = 0; // 0 : Routing Table , 1 : Request Processing
+const root = new Trie();
+const AddPathToTrie = (p: string, a: string, v: string) => {
+  let head = root;
+  for (let i = 0; i < p.length; i++) {
+    if (p[i] === "{") {
+      let param = "";
+      while (p[i] !== "}") {
+        if (p[i] != "{" && p[i] != "}") {
+          param += p[i];
+        }
+        i++;
+      }
+      head.param = param; // {id} / {post}
+      head.isParam = true;
+    } else {
+      //if not params or query
+      const idx = p[i]!.charCodeAt(0);
+      if (head.children[idx] === undefined) head.children[idx] = new Trie();
+
+      head = head.children[idx];
+    }
+  }
+  head.isEnd = true;
+  head.verb = v;
+  head.action = a;
+};
+
+const HandleRequest = (p: string, v: string) => {
+  let head = root;
+  let i = 0;
+  let action = "";
+  let attr = [] as String[];
+  const getIdx = (x: string) => x.charCodeAt(0);
+  while (i < p.length && head != undefined) {
+    let idx = getIdx(p[i]!);
+    if (!head.isParam && !head.children[idx] && p[i] !== "?") break;
+    //console.log(idx);
+
+    if (head.children[idx]) head = head.children[idx]!;
+    else {
+      //console.log(p[i]);
+      if (head.isParam) {
+        let paramVal = "";
+        while (i < p.length && p[i] !== "/") {
+          paramVal += p[i];
+          i++;
+        }
+        attr.push(`${head.param}=${paramVal}`);
+        if (i < p.length && p[i] === "/") continue;
+      } else if (head.isEnd) {
+        //Handle Query String
+        if (p[i] === "?") {
+          i++;
+          let q = "";
+          while (i < p.length) {
+            if (p[i] === "&") {
+              attr.push(`${q}`);
+              q = "";
+            } else {
+              q += p[i];
+            }
+            i++;
+          }
+          if (q !== "") attr.push(q);
+        }
+      }
+    }
+    i++;
+  }
+  if (head && head.isEnd) {
+    if (head.isParam && attr.length === 0) {
+      console.log("404");
+    } else {
+      attr.sort();
+      console.log(`${head.action} ${attr.join(" ")}`);
+    }
+  } else {
+    console.log("404");
+  }
+  // console.log(attr);
+};
+
+let mode = 0;
 while (i < data.length) {
   if (data[i] === "") {
-    mode++; // change to Request processing Mode
-    //console.log(routes);
+    mode++;
   } else {
     switch (mode) {
       case 0: {
         const [verb, path, action] = data[i]?.split(" ")!;
-
-        if (path === undefined || verb === undefined || action === undefined) {
-          break;
-        }
-        //console.log(verb, path, action);
-        let handler: Handler = {
-          verb: verb,
-          action: action,
-        };
-
-        let route: Routing;
-        if (routes.has(path)) {
-          route = routes.get(path)!;
-        } else {
-          route = new Routing(path);
-          routes.set(path, route);
-        }
-
-        route.setHandler(handler);
+        AddPathToTrie(path!, action!, verb!);
         break;
       }
       case 1: {
-        let [verb, path] = data[i]?.split(" ")!;
-        if (verb === undefined || path === undefined) continue;
-
-        console.log(getResponse(path, verb));
-
+        const [verb, path] = data[i]?.split(" ")!;
+        HandleRequest(path!, verb!);
         break;
       }
     }
   }
-
   i++;
 }
+let d = root;
+
+const test = (d: Trie) => {
+  let f = 0;
+  for (let i = 0; i < 27; i++) {
+    if (d.children[i] !== undefined) {
+      console.log(String.fromCharCode(i + 97), d.children[i]);
+      test(d.children[i]!);
+      f = 1;
+    }
+  }
+
+  if (f == 0) return;
+};
+
+for (let i = 0; i < 27; i++) {
+  if (d.children[i] !== undefined) {
+    console.log(String.fromCharCode(i + 97));
+    test(d.children[i]!);
+  }
+}
+
+// console.log(root);
