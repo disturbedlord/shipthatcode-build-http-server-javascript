@@ -1,177 +1,102 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const data = require("fs").readFileSync(0, "utf8").split("\n");
-class Tree {
-  type = "";
-  isEnd = false;
-  value = "";
-  children = [];
-  constructor(v) {
-    this.value = v;
-  }
-  route = [];
-}
-let i = 0;
-let mode = 0;
-const parseRequest = (s) => {
-  let resources = [];
-  let i = 0;
-  let resource = "";
-  while (i < s.length) {
-    if (s[i] === "?") {
-      if (resource != "") {
-        resources.push(resource);
-        resource = "";
-      }
-      resources.push(s.substring(i));
-      break;
-    }
-    if (s[i] === "/") {
-      if (resource != "") resources.push(resource);
-      resource = "";
-    } else {
-      resource += s[i];
-    }
-    i++;
-  }
-  if (resource !== "") resources.push(resource);
-  return resources;
-};
-const TreeHelper = {
-  searchByValue: (node, search) => {
-    let i = 0;
-    while (i < node.children.length) {
-      const curr = node.children[i];
-      if (curr.value === search) return curr;
-      i++;
-    }
-    return null;
-  },
-};
-const root = new Tree("root");
-const addToTree = (components, v, a) => {
-  let head = root;
-  components.forEach((ele) => {
-    let node = TreeHelper.searchByValue(head, ele);
-    if (!node) {
-      // Create a new Node in Tree
-      node = new Tree(ele);
-      node.type = ele.startsWith("{") ? "param" : "static";
-      head.children.push(node);
-    }
-    head = node;
-  });
-  head.isEnd = true;
-  head.route.push({
-    verb: v,
-    action: a,
-  });
-};
-const matchRoute = (components, verb) => {
-  //console.log("======================", components);
-  let head = root;
-  let i = 0;
-  let leafNode = undefined;
-  let paramNodes = [];
-  components;
-  const traverseTree = (node, components, i) => {
-    if (i >= components.length || !node) return;
-
-    let foundNode = TreeHelper.searchByValue(node, components[i]);
-    //console.log("------------\n", foundNode);
-    if (!foundNode && node.children.length === 1) {
-      if (node.children[0].type === "param") {
-        paramNodes.push(
-          `${node.children[0].value.substring(1, node.children[0].value.length - 1)}=${components[i]}`,
-        );
-      }
-      if (i < components.length - 1) {
-        foundNode = node.children[0];
-      } else {
-        if (
-          node.children[0].type == "param" &&
-          node.children[0].isEnd === true
-        ) {
-          return node.children[0];
-        }
-      }
-    }
-    if (!foundNode) return;
-    // if (foundNode && foundNode.isEnd && i === components.length - 1) {
-    //   return foundNode;
-    // }
-
-    if (foundNode.isEnd) {
-      if (
-        i === components.length - 1 ||
-        (i + 1 < components.length && components[i + 1].startsWith("?"))
-      ) {
-        // Last element in route
-        if (i + 1 < components.length && components[i + 1].startsWith("?")) {
-          const q = components[i + 1].substring(1).split("&");
-          if (q) {
-            q.forEach((e) => {
-              paramNodes.push(e);
-            });
-          }
-        }
-        return foundNode;
-      }
-    }
-    return traverseTree(foundNode, components, i + 1);
+const lines = require("fs").readFileSync(0, "utf8").split("\n");
+class Simulation {
+  workers = null;
+  queue = new Array();
+  requests = new Map();
+  time = 0;
+  done = 0;
+  setWorkers = (n) => {
+    //console.log(n);
+    this.workers = new Array();
+    for (let i = 0; i < n; i++) this.workers.push(-1);
+    // console.log(this.workers.length, n);
   };
-  leafNode = traverseTree(head, components, 0);
-  paramNodes.sort();
-  //console.log(leafNode);
-  if (leafNode) {
-    let action = "";
-    leafNode.route.forEach((r) => {
-      if (r.verb == verb) {
-        action = r.action;
+  addRequest = (id, cost) => {
+    this.requests.set(id, cost);
+    this.queue.push(id);
+  };
+  tick = () => {
+    this.time++;
+    this.workers.forEach((w) => {
+      if (w != -1) {
+        let remWork = this.requests.get(w);
+        if (remWork) {
+          remWork -= 1;
+          this.requests.set(w, remWork);
+        }
       }
     });
-    if (paramNodes.length > 0) console.log(`${action} ${paramNodes.join(" ")}`);
-    else {
-      console.log(`${action}`);
+  };
+  jobStarted = (job) => {
+    console.log(`STARTED ${job}`);
+  };
+  jobFinished = (job) => {
+    console.log(`DONE ${job}`);
+    this.done++;
+  };
+  getFreeWorkers = () => this.workers.filter((e) => e === -1).length;
+  showStatus = () => {
+    if (this.workers) {
+      const free = this.getFreeWorkers() ?? 0;
+      const busy = this.workers.length - free;
+      const queued = this.queue.length;
+      const done = this.done;
+      console.log(`free=${free} busy=${busy} queued=${queued} done=${done}`);
     }
-  } else {
-    console.log("404");
-  }
-};
-while (i < data.length) {
-  if (data[i] === "") {
-    mode = 1;
-  } else {
-    switch (mode) {
-      case 0: {
-        const [verb, path, action] = data[i].split(" ");
-        const pathComponents = parseRequest(path);
-        addToTree(pathComponents, verb, action);
-        //console.log(pathComponents);
-        break;
+  };
+  simulate = () => {
+    //console.log(this.requests, this.workers, this.time, this.queue);
+    const getNextJob = () => this.queue.shift();
+    let rerun = false;
+    this.workers.forEach((worker, idx) => {
+      if (worker === -1) // means its empty
+      {
+        const nextJob = getNextJob();
+        if (nextJob) {
+          this.workers[idx] = nextJob; // Job assigned to a worker
+          this.jobStarted(nextJob);
+        }
+      } else {
+        const remWork = this.requests.get(worker);
+        //console.log(remWork);
+        if (remWork != undefined && remWork <= 0) {
+          // a job has been completed
+          this.jobFinished(worker);
+          this.workers[idx] = -1; // set as empty
+          rerun = true;
+        }
       }
-      case 1: {
-        const [verb, path] = data[i].split(" ");
-        const pathComponents = parseRequest(path);
-        //console.log(pathComponents);
-        matchRoute(pathComponents, verb);
-        break;
-      }
-    }
-  }
-  i++;
+    });
+    if (rerun) this.simulate();
+  };
 }
-const visualizeTree = (root) => {
-  root.children.forEach((child) => {
-    console.log(
-      child.type,
-      child.value,
-      child.isEnd,
-      child.children.length,
-      child.route,
-    );
-    visualizeTree(child);
-  });
-};
-//visualizeTree(root);
+const simulation = new Simulation();
+for (let line of lines) {
+  if (line === "") continue;
+  const inp = line.split(" ");
+  const command = inp[0];
+  switch (command) {
+    case "WORKERS": {
+      simulation.setWorkers(inp[1]);
+      break;
+    }
+    case "ARRIVE": {
+      const id = inp[1];
+      const cost = inp[2];
+      simulation.addRequest(id, cost);
+      simulation.simulate();
+      break;
+    }
+    case "TICK": {
+      simulation.tick();
+      simulation.simulate();
+      break;
+    }
+    case "STATUS": {
+      simulation.showStatus();
+    }
+  }
+}
 //# sourceMappingURL=main.js.map
