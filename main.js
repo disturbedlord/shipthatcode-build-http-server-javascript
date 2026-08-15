@@ -39,7 +39,7 @@ class Simulation {
   getFreeWorkers = () => this.workers.filter((e) => e === -1).length;
   showStatus = () => {
     if (this.workers) {
-      const free = this.getFreeWorkers() ?? 0;
+      const free = this.getFreeWorkers() || 0;
       const busy = this.workers.length - free;
       const queued = this.queue.length;
       const done = this.done;
