@@ -15,7 +15,7 @@ class UrlTree {
   };
 }
 const parsePattern = (p) => {
-  p = p.includes(":") ? p.split(":").at(0) : p;
+  p = p.includes(":") ? p.split(":")[0] : p;
   return p.split(".").reverse();
 };
 const root = new UrlTree("root");
