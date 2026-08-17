@@ -30,6 +30,7 @@ class Server {
   parseRoute = (p: string) => {
     let routeComponents = [] as string[];
     routeComponents.push("/");
+
     routeComponents = routeComponents.concat(
       p.split("/").filter((e) => e !== ""),
     );
@@ -119,7 +120,10 @@ for (let line of lines) {
         const verb = inp[1],
           path = inp[2],
           handler = inp[3];
-        const routeComponents = server.parseRoute(path);
+        const sanitizedPath = path.includes("?")
+          ? path.substring(0, path.indexOf("?"))
+          : path;
+        const routeComponents = server.parseRoute(sanitizedPath);
         //console.error("------------", verb);
         server.addRouteToTree(routeComponents, verb, handler);
         break;
@@ -128,9 +132,11 @@ for (let line of lines) {
         const verb = inp[1],
           path = inp[2],
           body = inp[3] ?? "";
-
+        const sanitizedPath = path.includes("?")
+          ? path.substring(0, path.indexOf("?"))
+          : path;
         const routeComponents = server.parseRoute(path);
-        server.handleRequest(routeComponents, path, verb, body);
+        server.handleRequest(routeComponents, sanitizedPath, verb, body);
         break;
       }
     }
