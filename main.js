@@ -20,10 +20,14 @@ const parsePattern = (p) => {
 };
 const root = new UrlTree("root");
 let mode = 0;
+let end = false;
 for (let line of lines) {
   if (!line) {
     // Handle Empty Host Name
-    if (mode === 1) console.log("400");
+    if (mode === 1 && !end) {
+      console.log("400");
+      end = true;
+    }
     if (mode === 0) mode = 1;
     continue;
   }
