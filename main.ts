@@ -135,7 +135,7 @@ for (let line of lines) {
         const sanitizedPath = path.includes("?")
           ? path.substring(0, path.indexOf("?"))
           : path;
-        const routeComponents = server.parseRoute(path);
+        const routeComponents = server.parseRoute(sanitizedPath);
         server.handleRequest(routeComponents, sanitizedPath, verb, body);
         break;
       }
